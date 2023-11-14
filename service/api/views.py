@@ -1,10 +1,10 @@
-from fastapi import APIRouter, FastAPI, Request, Depends
-from fastapi.security import HTTPBearer
-from pydantic import BaseModel
 from typing import List
 
-from service.api.exceptions import UserNotFoundError, ModelNotFoundError, \
-    UnauthorizedUserError
+from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel
+
+from service.api.exceptions import ModelNotFoundError, UnauthorizedUserError, UserNotFoundError
 from service.log import app_logger
 
 
@@ -47,11 +47,11 @@ async def get_reco(
     request: Request,
     model_name: str,
     user_id: int,
-    token: str = Depends(bearer)
+    token: HTTPAuthorizationCredentials = Depends(bearer)
 ) -> RecoResponse:
     app_logger.info(f"Request for model: {model_name}, user_id: {user_id}")
 
-    app_logger.info("Token is", token)
+    app_logger.info(f"Token is {token}")
 
     if request.app.state.token != token.credentials:
         raise UnauthorizedUserError()

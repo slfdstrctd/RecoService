@@ -1,4 +1,5 @@
 from http import HTTPStatus
+
 from starlette.testclient import TestClient
 
 from service.settings import ServiceConfig
@@ -21,10 +22,9 @@ def test_get_reco_success(
     user_id = 123
     path = GET_RECO_PATH.format(model_name="some_model", user_id=user_id)
 
-    client.headers = {"Authorization": "Bearer topsecret"}
-
     with client:
-        response = client.get(path)
+        response = client.get(path,
+                              headers={"Authorization": "Bearer topsecret"})
     assert response.status_code == HTTPStatus.OK
     response_json = response.json()
     assert response_json["user_id"] == user_id
