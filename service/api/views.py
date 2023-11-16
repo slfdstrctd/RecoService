@@ -51,8 +51,6 @@ async def get_reco(
 ) -> RecoResponse:
     app_logger.info(f"Request for model: {model_name}, user_id: {user_id}")
 
-    app_logger.info(f"Token is {token}")
-
     if request.app.state.token != token.credentials:
         raise UnauthorizedUserError()
 
