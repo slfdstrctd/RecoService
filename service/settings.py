@@ -1,4 +1,5 @@
-from pydantic import Field
+import os
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,7 +16,7 @@ class LogConfig(Config):
 class ServiceConfig(Config):
     service_name: str = "reco_service"
     k_recs: int = 10
-    token: str = Field(validation_alias='AUTH_TOKEN')
+    token: str = os.getenv("TOKEN")
     log_config: LogConfig
 
 
