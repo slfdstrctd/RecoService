@@ -1,6 +1,6 @@
-import os
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+AUTH_TOKEN = 'topsecret'
 
 
 class Config(BaseSettings):
@@ -16,7 +16,7 @@ class LogConfig(Config):
 class ServiceConfig(Config):
     service_name: str = "reco_service"
     k_recs: int = 10
-    token: str = os.getenv("TOKEN")
+    token: str = AUTH_TOKEN
     log_config: LogConfig
 
 
