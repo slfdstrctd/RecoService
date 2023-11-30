@@ -21,6 +21,7 @@ def load_model_from_pickle(file_path) -> UserKnn:
 
 
 router = APIRouter()
+uknn = load_model_from_pickle("saved_models/userknn.pkl")
 
 
 @router.get(
@@ -51,8 +52,7 @@ async def get_reco(
     if model_name == "some_model":
         reco = list(range(k_recs))
     elif model_name == "userknn":
-        uknn = load_model_from_pickle("saved_models/userknn2.pkl")
-        reco = uknn.recommend(user_id=int(user_id), N_recs=10)
+        reco = uknn.recommend(user_id=user_id, N_recs=10)
     else:
         raise ModelNotFoundError(error_message=f"Model {model_name} not found")
     return RecoResponse(user_id=user_id, items=reco)

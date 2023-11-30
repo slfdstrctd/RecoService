@@ -1,12 +1,15 @@
-from typing import Dict, List, Any
-from collections import Counter
-import rectools.models
-import pandas as pd
+from typing import Dict, Any
+
 import numpy as np
+import pandas as pd
 import scipy as sp
 from implicit.nearest_neighbours import ItemItemRecommender
 from rectools.dataset import Dataset
 from rectools.models import PopularModel
+
+
+def idf(n: int, x: float):
+    return np.log((1 + n) / (1 + x) + 1)
 
 
 class UserKnn:
@@ -15,6 +18,16 @@ class UserKnn:
     """
 
     def __init__(self, model: ItemItemRecommender, N_users: int = 50):
+        self.n = None
+        self.weights_matrix = None
+        self.user_knn = None
+        self.interaction_matrix = None
+        self.items_mapping = None
+        self.items_inv_mapping = None
+        self.users_mapping = None
+        self.users_inv_mapping = None
+        self.watched = None
+        self.popular = None
         self.N_users = N_users
         self.model = model
         self.is_fitted = False
@@ -54,15 +67,11 @@ class UserKnn:
 
         return self.interaction_matrix
 
-    def idf(self, n: int, x: float):
-        return np.log((1 + n) / (1 + x) + 1)
-
     def _count_item_idf(self, df: pd.DataFrame):
-        item_cnt = Counter(df['item_id'].values)
-        item_idf = pd.DataFrame.from_dict(item_cnt, orient='index',
-                                          columns=['doc_freq']).reset_index()
+        item_idf = df['item_id'].value_counts().reset_index()
+        item_idf.columns = ['index', 'doc_freq']
         item_idf['idf'] = item_idf['doc_freq'].apply(
-            lambda x: self.idf(self.n, x))
+            lambda x: idf(self.n, x))
         self.item_idf = item_idf
 
     def fit(self, train: pd.DataFrame):
@@ -77,8 +86,10 @@ class UserKnn:
 
         self.user_knn.fit(self.weights_matrix)
 
-        self.pop_model = rectools.models.PopularModel()
+        self.pop_model = PopularModel()
         self.pop_model.fit(Dataset.construct(train))
+
+        self.popular = self.get_popular()
 
         self.is_fitted = True
 
@@ -131,15 +142,16 @@ class UserKnn:
 
         # Fill knn recommendations with popular if they are less than N_recs
         if len(recs) < N_recs:
-            popular_recs = [self.items_inv_mapping[p] for p in
-                            self.pop_model.popularity_list[0][:N_recs]]
-            popular_recs_df = pd.DataFrame(
-                {'user_id': np.repeat(test.user_id.values, len(popular_recs)),
-                 'item_id': np.tile(popular_recs, len(test.user_id.values)),
-                 'sim': 0.01,
-                 'similar_user_id': -1,
-                 'score': 0,
-                 'idf': 1})
+            popular_recs = self.popular[:N_recs]
+            popular_recs_df = pd.DataFrame({
+                'user_id': np.repeat(test.user_id.values,
+                                     len(popular_recs)),
+                'item_id': np.tile(popular_recs, len(test.user_id.values)),
+                'sim': 0.01,
+                'similar_user_id': -1,
+                'score': 0,
+                'idf': 1
+            })
             recs = pd.concat([recs, popular_recs_df], ignore_index=True)
             recs = recs.drop_duplicates(['user_id', 'item_id'], keep='first')
             recs = recs.head(N_recs)
@@ -153,5 +165,12 @@ class UserKnn:
 
     def recommend(self, user_id: int, N_recs: int = 10) -> list[Any]:
         user = pd.DataFrame([{'user_id': user_id}])
-        recommendations = self.predict(user, N_recs)
-        return list(recommendations.item_id)
+        if user_id in self.users_mapping:
+            recs = self.predict(user, N_recs)  # Fetch existing user recs
+            return list(recs.item_id)
+        else:  # For cold start users, return popular items
+            return list(self.popular[:N_recs])
+
+    def get_popular(self):
+        return [self.items_inv_mapping[p] for p in
+                self.pop_model.popularity_list[0]]
