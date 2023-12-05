@@ -88,9 +88,6 @@ class UserKnn:
 
         self.pop_model = PopularModel()
         self.pop_model.fit(Dataset.construct(train))
-
-        self.popular = self.get_popular()
-
         self.is_fitted = True
 
     def _generate_recs_mapper(self, model: ItemItemRecommender,
@@ -104,7 +101,6 @@ class UserKnn:
         return _recs_mapper
 
     def predict_knn(self, test: pd.DataFrame):
-
         if not self.is_fitted:
             raise ValueError("Please call fit before predict")
 
@@ -131,10 +127,6 @@ class UserKnn:
 
     # Mixed recommendation method
     def predict(self, test: pd.DataFrame, N_recs: int = 10) -> pd.DataFrame:
-        if not self.pop_model:
-            raise Exception(
-                "Popular model is not fitted yet. Please fit the popular model first.")
-
         if not self.is_fitted:
             raise ValueError("Please call fit before predict")
 
@@ -165,12 +157,17 @@ class UserKnn:
 
     def recommend(self, user_id: int, N_recs: int = 10) -> list[Any]:
         user = pd.DataFrame([{'user_id': user_id}])
+
+        # Get popular once
+        if not self.popular:
+            self.popular = self.get_popular(N_recs)
+
         if user_id in self.users_mapping:
             recs = self.predict(user, N_recs)  # Fetch existing user recs
             return list(recs.item_id)
         else:  # For cold start users, return popular items
             return list(self.popular[:N_recs])
 
-    def get_popular(self):
-        return [self.items_inv_mapping[p] for p in
-                self.pop_model.popularity_list[0]]
+    def get_popular(self, N_recs: int = 10):
+        return [self.items_inv_mapping[p] for i, p in
+                enumerate(self.pop_model.popularity_list[0]) if i < N_recs]
