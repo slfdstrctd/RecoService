@@ -10,6 +10,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-20.04
+    env:
+      TOKEN: ${{ secrets.TOKEN }}
 
     steps:
       - name: Checkout
@@ -32,13 +34,13 @@ jobs:
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-  
+
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install 
-      
-      - name: Run tests
-        run: make lint
+        run: poetry install
 
       - name: Run linters
+        run: make lint
+
+      - name: Run tests
         run: make test

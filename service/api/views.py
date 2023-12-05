@@ -1,11 +1,11 @@
 from typing import List
 
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
-from service.api.exceptions import ModelNotFoundError, UserNotFoundError
+from service.api.exceptions import ModelNotFoundError, UnauthorizedUserError, UserNotFoundError
 from service.log import app_logger
-from saved_models.models import userknn
 
 
 class RecoResponse(BaseModel):
@@ -14,6 +14,7 @@ class RecoResponse(BaseModel):
 
 
 router = APIRouter()
+bearer = HTTPBearer()
 
 
 @router.get(
@@ -28,25 +29,39 @@ async def health() -> str:
     path="/reco/{model_name}/{user_id}",
     tags=["Recommendations"],
     response_model=RecoResponse,
+    responses={
+        404: {
+            "description": "Not found",
+            "content": {"application/json": {
+                "example": {"detail": "Model or user not found"}}
+            },
+        },
+        401: {
+            "description": "Not authorized",
+            "content": {"application/json": {
+                "example": {"detail": "Authorization failed"}}},
+        },
+    },
 )
 async def get_reco(
     request: Request,
     model_name: str,
     user_id: int,
+    token: HTTPAuthorizationCredentials = Depends(bearer)
 ) -> RecoResponse:
     app_logger.info(f"Request for model: {model_name}, user_id: {user_id}")
+
+    if request.app.state.token != token.credentials:
+        raise UnauthorizedUserError()
 
     if user_id > 10 ** 9:
         raise UserNotFoundError(error_message=f"User {user_id} not found")
 
-    k_recs = request.app.state.k_recs
-
-    if model_name == "some_model":
-        reco = list(range(k_recs))
-    elif model_name == "userknn":
-        reco = userknn.recommend(user_id=user_id, N_recs=k_recs)
-    else:
+    if model_name != 'some_model':
         raise ModelNotFoundError(error_message=f"Model {model_name} not found")
+
+    k_recs = request.app.state.k_recs
+    reco = list(range(k_recs))
     return RecoResponse(user_id=user_id, items=reco)
 
 
