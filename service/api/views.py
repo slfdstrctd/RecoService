@@ -56,7 +56,7 @@ async def get_reco(
 
     if model_name == "some_model":
         reco = list(range(k_recs))
-    elif model_name == "userknn":
+    elif model_name == "userknn" and userknn:
         reco = userknn.recommend(user_id=user_id, N_recs=10)
     else:
         raise ModelNotFoundError(error_message=f"Model {model_name} not found")
