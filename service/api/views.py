@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
+from saved_models.models import userknn
 from service.api.exceptions import ModelNotFoundError, UnauthorizedUserError, UserNotFoundError
 from service.log import app_logger
 
@@ -51,11 +52,15 @@ async def get_reco(
     if user_id > 10**9:
         raise UserNotFoundError(error_message=f"User {user_id} not found")
 
-    if model_name != "some_model":
+    k_recs = request.app.state.k_recs
+
+    if model_name == "some_model":
+        reco = list(range(k_recs))
+    elif model_name == "userknn":
+        reco = userknn.recommend(user_id=user_id, N_recs=10)
+    else:
         raise ModelNotFoundError(error_message=f"Model {model_name} not found")
 
-    k_recs = request.app.state.k_recs
-    reco = list(range(k_recs))
     return RecoResponse(user_id=user_id, items=reco)
 
 
