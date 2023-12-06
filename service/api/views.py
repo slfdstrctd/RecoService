@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
-from saved_models.models import als_ann, userknn
+from saved_models.models import als_ann, lfm_ann, userknn
 from service.api.exceptions import ModelNotFoundError, UnauthorizedUserError, UserNotFoundError
 from service.log import app_logger
 
@@ -60,6 +60,8 @@ async def get_reco(
         reco = userknn.recommend(user_id=user_id, N_recs=10)
     elif als_ann and model_name == "als_ann":
         reco = als_ann.recommend(user_id=user_id, N_recs=10)
+    elif als_ann and model_name == "lfm_ann":
+        reco = lfm_ann.recommend(user_id=user_id, N_recs=10)
     else:
         raise ModelNotFoundError(error_message=f"Model {model_name} not found")
 

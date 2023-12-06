@@ -26,13 +26,18 @@ popular = load_json('saved_models/popular.json')
 
 userknn = load_model_from_pickle("saved_models/userknn.pkl")
 als_ann = load_model_from_pickle("saved_models/als_ann.pkl")
+lfm_ann = load_model_from_pickle("saved_models/lfm_ann.pkl")
+
+
+def recommend_ann(self, user_id, N_recs=10, popular=popular):
+    if user_id in self.user_id_map.external_ids:
+        return self.get_item_list_for_user(user_id, N_recs).tolist()
+    else:
+        return popular[0].values.tolist()[:10]
+
 
 if als_ann and len(popular):
-    def recommend_als_ann(self, user_id, N_recs=10, popular=popular):
-        if user_id in self.user_id_map.external_ids:
-            return self.get_item_list_for_user(user_id, N_recs).tolist()
-        else:
-            return popular[0].values.tolist()[:10]
+    als_ann.recommend = MethodType(recommend_ann, als_ann)
 
-
-    als_ann.recommend = MethodType(recommend_als_ann, als_ann)
+if lfm_ann and len(popular):
+    lfm_ann.recommend = MethodType(recommend_ann, lfm_ann)
