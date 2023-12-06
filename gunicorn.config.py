@@ -5,14 +5,14 @@ from service import log, settings
 
 # The socket to bind.
 host = env("HOST", "0.0.0.0")
-port = int(env("PORT", "8080"))
+port = int(env("PORT", "8000"))
 bind = f"{host}:{port}"
 
 # The maximum number of pending connections.
 backlog = env("GUNICORN_BACKLOG", 2048)
 
 # The number of worker processes for handling requests.
-workers = env("GUNICORN_WORKERS", cpu_count())
+workers = env("GUNICORN_WORKERS", 6)  # cpu_count())
 
 # The type of workers to use.
 worker_class = env("GUNICORN_WORKER_CLASS", "uvicorn.workers.UvicornWorker")
