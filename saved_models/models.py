@@ -32,6 +32,8 @@ dssm_offline = load_model_from_pickle("saved_models/dssm_offline.pkl")
 ae_offline = load_model_from_pickle("saved_models/ae_offline.pkl")
 recvae_offline = load_model_from_pickle("saved_models/recVAE_offline.pkl")
 
+ranker_offline = load_model_from_pickle("saved_models/ranker.pkl")
+
 
 def recommend_ann(self, user_id, N_recs=10, popular=popular):
     if user_id in self.user_id_map.external_ids:
@@ -48,6 +50,8 @@ def recommend_offline(model_name, user_id, popular=popular):
         file = ae_offline
     elif model_name == 'recvae':
         file = recvae_offline
+    elif model_name == 'ranker':
+        file = ranker_offline
 
     if user_id in file:
         return file.get(user_id)

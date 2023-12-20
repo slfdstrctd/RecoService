@@ -62,7 +62,7 @@ async def get_reco(
         reco = als_ann.recommend(user_id=user_id, N_recs=10)
     elif lfm_ann and model_name == "lfm_ann":
         reco = lfm_ann.recommend(user_id=user_id, N_recs=10)
-    elif recommend_offline and model_name in ("dssm", "ae", "recvae"):
+    elif recommend_offline and model_name in ("dssm", "ae", "recvae", "ranker"):
         reco = recommend_offline(model_name=model_name, user_id=user_id)
     else:
         raise ModelNotFoundError(error_message=f"Model {model_name} not found")
